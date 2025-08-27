@@ -2,13 +2,13 @@ package com.example.myapplication
 
 import android.annotation.SuppressLint
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.core.net.toUri
 import androidx.fragment.app.Fragment
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.PermissionController
@@ -33,6 +33,8 @@ import java.time.ZonedDateTime
 
 
 class HealthDataFragment : Fragment() {
+
+    val TAG = "HealthData"
 
     private var _binding: FragmentHealthDataBinding? = null
     private val binding get() = _binding!!
@@ -64,16 +66,21 @@ class HealthDataFragment : Fragment() {
             HealthPermission.getWritePermission(HeightRecord::class),
         )
 
-    // Create the permissions launcher
+    //MARK:- Create the permissions launcher
     private val requestPermissionActivityContract =
         PermissionController.createRequestPermissionResultContract()
 
     private val requestPermissions =
         registerForActivityResult(requestPermissionActivityContract) { granted ->
             if (granted.containsAll(PERMISSIONS)) {
-                Toast.makeText(requireContext(), "Permissions successfully granted", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    requireContext(),
+                    "Permissions successfully granted",
+                    Toast.LENGTH_SHORT
+                ).show()
             } else {
-                Toast.makeText(requireContext(), "Permissions not granted", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Permissions not granted", Toast.LENGTH_SHORT)
+                    .show()
             }
         }
 
@@ -90,7 +97,7 @@ class HealthDataFragment : Fragment() {
         _binding = null
     }
 
-    @SuppressLint("SetTextI18n")
+    @SuppressLint("SetTextI18n", "DefaultLocale")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
@@ -106,7 +113,7 @@ class HealthDataFragment : Fragment() {
             requireContext().startActivity(
                 Intent(Intent.ACTION_VIEW).apply {
                     setPackage("com.android.vending")
-                    data = Uri.parse(uriString)
+                    data = uriString.toUri()
                     putExtra("overlay", true)
                     putExtra("callerId", requireContext().packageName)
                 }
@@ -122,8 +129,6 @@ class HealthDataFragment : Fragment() {
             val now = ZonedDateTime.now()
             val startOfDay = now.toLocalDate().atStartOfDay(now.zone).toInstant()
             val endOfDay = now.toLocalDate().plusDays(1).atStartOfDay(now.zone).toInstant()
-
-//            val steps = aggregateSteps(healthConnectClient, startOfDay, endOfDay)
 
             val heartRates = readHeartRateByTimeRange(
                 healthConnectClient,
@@ -154,52 +159,51 @@ class HealthDataFragment : Fragment() {
                 endOfDay
             )
 
-            val height = readAllHeightHistory(healthConnectClient)
-            val weight = readAllWeightHistory(healthConnectClient)
+            val bpm = readBPMByTimeRange(
+                healthConnectClient,
+                startOfDay,
+                endOfDay
+            )
 
-            Log.d("HealthData", "Start Of the Day : $startOfDay")
-            Log.d("HealthData", "End Of the Day : $endOfDay")
-            Log.d("HealthData", "Heart rates: $heartRates")
-            Log.d("HealthData", "Steps: $steps")
-            Log.d("HealthData", "Calories: $calories")
-            Log.d("HealthData", "Calories 1: ${calories.calories.inCalories}")
-            Log.d("HealthData", "Distance: $distance")
-            Log.d("HealthData", "Duration: $duration")
-            Log.d("HealthData", "Height: $height")
-            Log.d("HealthData", "Weight: $weight")
-            Log.d("HealthData", "Duration Seconds: ${duration.seconds}")
+            val height = readAllHeightHistory(healthConnectClient)
+            val weight = readWeightInputs(healthConnectClient)
+
+            Log.d(TAG, "Start Of the Day : $startOfDay")
+            Log.d(TAG, "End Of the Day : $endOfDay")
+            Log.d(TAG, "BPM: $bpm")
+            Log.d(TAG, "Heart rates: $heartRates")
+            Log.d(TAG, "Steps: $steps")
+            Log.d(TAG, "Calories: $calories")
+            Log.d(TAG, "Calories 1: ${calories.calories.inCalories}")
+            Log.d(TAG, "Distance: $distance")
+            Log.d(TAG, "Duration: $duration")
+            Log.d(TAG, "Height: $height")
+            Log.d(TAG, "Weight: $weight")
+            Log.d(TAG, "Duration Seconds: $duration")
             if (height.isNotEmpty()) {
                 val heightCm = height.last().height.inMeters * 100
-                Log.d("HealthData", "Height: ${String.format("%.2f", heightCm)} Centimeters")
+                Log.d(TAG, "Height: ${String.format("%.2f", heightCm)} Centimeters")
             } else {
-                Log.d("HealthData", "Height data not available")
+                Log.d(TAG, "Height data not available")
             }
-
-
             if (weight.isNotEmpty()) {
                 val weightKg = weight.last().weight.inKilograms
-                Log.d("HealthData", "Weight: ${String.format("%.2f", weightKg)} Kilograms")
+                Log.d(TAG, "Weight: ${String.format("%.2f", weightKg)} Kilograms")
             } else {
-                Log.d("HealthData", "Weight data not available")
-            }
-
-            // Example: update UI with results
-            binding.stepCount.text = if (heartRates.isNotEmpty()) {
-                "Latest HR: ${heartRates.last().samples.lastOrNull()?.beatsPerMinute ?: "-"} bpm"
-            } else {
-                "No heart rate data"
+                Log.d(TAG, "Weight data not available")
             }
 
             binding.apply {
                 stepCount.text = "Steps in last 24h: $steps"
                 tvCalories.text = "Calories: ${calories.calories.inCalories}"
-                tvDistance.text = "Distance: ${String.format("%.2f",distance/1000)} km"
-                tvDuration.text = "Duration: ${duration} seconds"
+                tvDistance.text = "Distance: ${String.format("%.2f", distance / 1000)} km"
+                tvDuration.text = "Duration: ${duration} Minuts"
+                tvMinBPM.text = "Min BPM: ${bpm.firstOrNull() ?: "-"} bpm"
+                tvMaxBPM.text = "Max BPM: ${bpm.lastOrNull() ?: "-"} bpm"
                 if (heartRates.isNotEmpty()) {
                     val heartRate = heartRates.last().samples.lastOrNull()?.beatsPerMinute ?: "-"
                     tvHeartRate.text = "Latest HR: $heartRate bpm"
-                }
-                else{
+                } else {
                     tvHeartRate.text = "No heart rate data"
                 }
                 if (height.isNotEmpty()) {
@@ -208,8 +212,6 @@ class HealthDataFragment : Fragment() {
                 } else {
                     tvHeight.text = "Height data not available"
                 }
-
-
                 if (weight.isNotEmpty()) {
                     val weightKg = weight.last().weight.inKilograms
                     tvWeight.text = "Weight: ${String.format("%.2f", weightKg)} Kilograms"
@@ -225,7 +227,8 @@ class HealthDataFragment : Fragment() {
     private suspend fun checkPermissionsAndRun(healthConnectClient: HealthConnectClient) {
         val granted = healthConnectClient.permissionController.getGrantedPermissions()
         if (granted.containsAll(PERMISSIONS)) {
-            Toast.makeText(requireContext(), "Permissions already granted", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), "Permissions already granted", Toast.LENGTH_SHORT)
+                .show()
         } else {
             requestPermissions.launch(PERMISSIONS)
         }
@@ -246,7 +249,34 @@ class HealthDataFragment : Fragment() {
             )
             response.records
         } catch (e: Exception) {
-            Log.e("HealthData", "Error reading heart rate", e)
+            Log.e(TAG, "Error reading heart rate", e)
+            emptyList()
+        }
+    }
+
+    //MARK:- Read Heart Rate BPM
+    private suspend fun readBPMByTimeRange(
+        healthConnectClient: HealthConnectClient,
+        startTime: Instant,
+        endTime: Instant
+    ): List<Long?> {
+        return try {
+            val response =
+                healthConnectClient.aggregate(
+                    AggregateRequest(
+                        setOf(HeartRateRecord.BPM_MAX, HeartRateRecord.BPM_MIN),
+                        timeRangeFilter = TimeRangeFilter.between(startTime, endTime)
+                    )
+                )
+            val minimumHeartRate = response[HeartRateRecord.BPM_MIN]
+            val maximumHeartRate = response[HeartRateRecord.BPM_MAX]
+            Log.d(
+                TAG,
+                "Minimum Heart Rate: $minimumHeartRate \n Maximum Heart Rate: $maximumHeartRate"
+            )
+            return listOf(minimumHeartRate, maximumHeartRate)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error reading heart rate", e)
             emptyList()
         }
     }
@@ -278,7 +308,7 @@ class HealthDataFragment : Fragment() {
             }
             */
         } catch (e: Exception) {
-            Log.e("HealthData", "Error aggregating steps", e)
+            Log.e(TAG, "Error aggregating steps", e)
             0L
         }
     }
@@ -296,10 +326,10 @@ class HealthDataFragment : Fragment() {
                     timeRangeFilter = TimeRangeFilter.between(start, end)
                 )
             )
-            Log.d("HealthData", "Raw calories: $response")
+            Log.d(TAG, "Raw calories: $response")
             response[ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL]?.inKilocalories ?: 0.0
         } catch (e: Exception) {
-            Log.e("HealthData", "Error aggregating calories", e)
+            Log.e(TAG, "Error aggregating calories", e)
             0.0
         }
     }
@@ -319,7 +349,7 @@ class HealthDataFragment : Fragment() {
             )
             response[DistanceRecord.DISTANCE_TOTAL]?.inMeters ?: 0.0
         } catch (e: Exception) {
-            Log.e("HealthData", "Error aggregating distance", e)
+            Log.e(TAG, "Error aggregating distance", e)
             0.0
         }
     }
@@ -329,27 +359,36 @@ class HealthDataFragment : Fragment() {
         healthConnectClient: HealthConnectClient,
         start: Instant,
         end: Instant
-    ): Duration {
+    ): Long {
         return try {
             val response = healthConnectClient.readRecords(
                 ReadRecordsRequest(
-                    recordType = ExerciseSessionRecord::class,
+                    recordType = StepsRecord::class,
                     timeRangeFilter = TimeRangeFilter.between(start, end)
                 )
             )
-            var total = Duration.ZERO
+            var activeMinutes = 0L
             for (record in response.records) {
-                total = total.plus(Duration.between(record.startTime, record.endTime))
-
-                Log.d("Exercise", "Session: ${record.exerciseType}, " +
-                        "From=${record.startTime}, To=${record.endTime}, " +
-                        "Duration=${Duration.between(record.startTime, record.endTime)}")
-
+                val durationMinutes = Duration.between(record.startTime, record.endTime).toMinutes()
+                if (durationMinutes > 0) {
+                    val stepsPerMinute = record.count.toDouble() / durationMinutes.toDouble()
+                    if (stepsPerMinute >= 30.0) {
+                        activeMinutes += durationMinutes
+                    }
+                    Log.d(
+                        "MoveMinutes",
+                        "Steps=${record.count}, " +
+                                "From=${record.startTime}, To=${record.endTime}, " +
+                                "Duration=${durationMinutes}min, " +
+                                "Rate=${stepsPerMinute} steps/min"
+                    )
+                }
             }
-            total
+            Log.d(TAG, "Total active minutes = $activeMinutes")
+            activeMinutes
         } catch (e: Exception) {
-            Log.e("HealthData", "Error reading exercise sessions", e)
-            Duration.ZERO
+            Log.e(TAG, "Error reading exercise sessions", e)
+            0L
         }
     }
 
@@ -366,30 +405,26 @@ class HealthDataFragment : Fragment() {
             )
             response.records
         } catch (e: Exception) {
-            Log.e("HealthData", "Error reading height history", e)
+            Log.e(TAG, "Error reading height history", e)
             emptyList()
         }
     }
 
     //MARK:- Read Weight
-    suspend fun readAllWeightHistory(
-        healthConnectClient: HealthConnectClient
+    suspend fun readWeightInputs(
+        healthConnectClient: HealthConnectClient,
     ): List<WeightRecord> {
         return try {
             val response = healthConnectClient.readRecords(
                 ReadRecordsRequest(
                     recordType = WeightRecord::class,
-                    timeRangeFilter = TimeRangeFilter.after(Instant.EPOCH) // from the beginning
+                    timeRangeFilter = TimeRangeFilter.after(Instant.EPOCH)
                 )
             )
             response.records
         } catch (e: Exception) {
-            Log.e("HealthData", "Error reading weight history", e)
+            Log.e(TAG, "Error reading height history", e)
             emptyList()
         }
     }
-
-
-
-
 }

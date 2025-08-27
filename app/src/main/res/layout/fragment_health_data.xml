@@ -19,7 +19,7 @@
             android:id="@+id/tvHeartRate"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Heart Rate"
+            android:text="@string/heart_rate"
             app:layout_constraintBottom_toTopOf="@id/stepCount"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -29,37 +29,49 @@
             android:id="@+id/stepCount"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Health Data Aggr" />
+            android:text="@string/steps" />
 
         <TextView
             android:id="@+id/tvCalories"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Calories" />
+            android:text="@string/calories" />
 
         <TextView
             android:id="@+id/tvDistance"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Distance" />
+            android:text="@string/distance" />
 
         <TextView
             android:id="@+id/tvDuration"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Duration" />
+            android:text="@string/duration" />
 
         <TextView
             android:id="@+id/tvWeight"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Weight" />
+            android:text="@string/weight" />
 
         <TextView
             android:id="@+id/tvHeight"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Height" />
+            android:text="@string/height" />
+
+        <TextView
+            android:id="@+id/tvMinBPM"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/max_bpm" />
+
+        <TextView
+            android:id="@+id/tvMaxBPM"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/min_bpm" />
 
 
     </LinearLayout>
